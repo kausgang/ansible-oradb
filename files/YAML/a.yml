@@ -1,0 +1,130 @@
+---
+- hosts: all
+  # remote_user: root
+  tasks:
+    # - name: Install the latest version of zip and unzip
+    #   # (which requires root privileges) when connected as a non-root user, you can use the default value of become_user (root):
+    #   become: yes 
+    #   # become_user: root
+    #   yum:
+    #     name: zip,unzip
+    #     state: latest
+    
+    - name: Install the latest version of Oracle DB prerequisites
+      become: true
+      # become_user: root
+      yum:
+        name: oracle-database-server-12cR2-preinstall
+        state: latest
+
+    # - name: Create directories which will hold Oracle software installation
+    #   shell: "mkdir -p /u01/app/oracle/product/12.2.0.1;chown -R oracle:oinstall /u01;chmod -R 775 /u01"
+    #   become: true
+    #   # become_user: oracle
+
+    # - name: Create general installation directory as root
+    #   become: true
+    #   ansible.builtin.file:
+    #     path: "/u01"
+    #     state: directory
+    #     mode: '0777'
+
+    - name: Create oracle home directory 
+      become: true
+      become_user: oracle
+      ansible.builtin.file:
+        path: "/u01/app/oracle/product/12.2.0.1"
+        state: directory
+        mode: '0755'
+
+
+
+
+    # - name: Recursively change ownership of a directory
+    #   become: true
+    #   ansible.builtin.file:
+    #     path: /u01
+    #     state: directory
+    #     recurse: yes
+    #     owner: oracle
+    #     group: oinstall
+
+    - name: Update oracle bash profile
+      become: true
+      become_user: oracle
+      blockinfile:
+        path: /home/oracle/.bashrc
+        block: |
+          # User specific environment and startup programs
+          export ORACLE_HOME=/u01/app/oracle/product/12.2.0.1
+          export ORACLE_BASE=/u01/app/oracle
+          export ORACLE_SID=SIEBELDB
+
+          export NLS_LANG=american_america.al32utf8
+          export NLS_DATE_FORMAT="yyyy-mm-dd:hh24:mi:ss"
+
+          PATH=$PATH:$HOME/.local/bin:$ORACLE_HOME/bin
+
+          export PATH
+
+
+
+    # - name: unzip binary
+    #   unarchive:
+    #     src: "/BINARIES/OracleDB-12.2.0.1.zip"
+    #     dest: "/BINARIES/"
+    #     remote_src: yes
+        
+    
+    # - name: install oracle
+    #   # shell : "source /home/oracle/.bash_profile && echo y | ./runInstaller -ignoreSysPrereqs -ignorePrereq -showProgress -silent -waitforcompletion -responseFile /tmp/oracle-{{oracle_version}}.rsp"
+    #   shell : "source /home/oracle/.bash_profile && echo y | ./runInstaller -ignoreSysPrereqs -ignorePrereq -showProgress -silent -waitforcompletion -responseFile /BINARIES/RSP_FILES/db_install.rsp"
+    #   # shell : "source /home/oracle/.bash_profile && echo y | ./runInstaller -ignoreSysPrereqs -showProgress -silent       \
+    #   #         oracle.install.option=INSTALL_DB_SWONLY                      \
+    #   #         ORACLE_HOSTNAME=${HOSTNAME}                                  \
+    #   #         UNIX_GROUP_NAME=oinstall                                     \
+    #   #         INVENTORY_LOCATION=/u01/app/oraInventory                     \
+    #   #         SELECTED_LANGUAGES=en,en_GB                                  \
+    #   #         ORACLE_HOME=${ORACLE_HOME}                                   \
+    #   #         ORACLE_BASE=${ORACLE_BASE}                                   \
+    #   #         oracle.install.db.InstallEdition=EE                          \
+    #   #         oracle.install.db.OSDBA_GROUP=dba                            \
+    #   #         oracle.install.db.OSOPER_GROUP=dba                           \
+    #   #         oracle.install.db.OSBACKUPDBA_GROUP=dba                      \
+    #   #         oracle.install.db.OSDGDBA_GROUP=dba                          \
+    #   #         oracle.install.db.OSKMDBA_GROUP=dba                          \
+    #   #         oracle.install.db.OSRACDBA_GROUP=dba                         \
+    #   #         SECURITY_UPDATES_VIA_MYORACLESUPPORT=false                   \
+    #   #         DECLINE_SECURITY_UPDATES=true                                \
+    #   #         oracle.installer.autoupdates.option=SKIP_UPDATES"
+    #   become: true
+    #   become_user: oracle
+    #   # become_method: su
+    #   args:
+    #     chdir: "/BINARIES/database"
+    #     # creates: "{{oracle_base_path}}/base/product/12.1.0/dbhome_1/oraInst.loc"
+    #     executable: "/usr/bin/bash"
+
+
+    - name: run orainstRoot.sh
+      become: true
+      command: "/u01/app/oracle/oraInventory/orainstRoot.sh"
+      args:
+        creates: /etc/oraInst.loc
+
+
+    - name: run root.sh
+      become: true
+      command: "/u01/app/oracle/product/12.2.0.1/root.sh"
+      args:
+        creates: /etc/oratab
+
+
+    - name: create instance
+      shell : "source /home/oracle/.bash_profile && dbca -silent -createDatabase -templateName General_Purpose.dbc -responseFile /BINARIES/RSP_FILES/dbca.rsp"
+      become: true
+      become_user: oracle
+      # become_method: su
+      args:
+        executable: "/usr/bin/bash"
+        # creates: "{{oracle_base_path}}/base/oradata/orcl/system01.dbf"

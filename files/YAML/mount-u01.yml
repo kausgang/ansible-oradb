@@ -1,0 +1,46 @@
+---
+- hosts: all
+  # remote_user: root
+  tasks:
+    # - name: Install the latest version of Oracle DB prerequisites
+    #   become: true
+    #   # become_user: root
+    #   yum:
+    #     name: oracle-database-server-12cR2-preinstall
+    #     state: latest
+
+    # - name: Create a new primary partition with a size of 40GiB
+    #   become: true
+    #   parted:
+    #     device: /dev/sda
+    #     number: 2
+    #     state: present
+    #     part_type: logical
+    #     part_end: 40GiB
+
+    # - name: partprobe
+    #   shell: "partprobe"
+    #   become: true
+    #   # become_user: oracle
+
+    # - name: Create a ext4 filesystem on /dev/sda3
+    #   become: true
+    #   filesystem:
+    #     fstype: ext4
+    #     dev: /dev/sda3
+
+    - name: Create general installation directory as root
+      become: true
+      ansible.builtin.file:
+        path: "/u01"
+        state: directory
+        mode: '0777'
+
+    # - name: Mount /dev/sda3 on /u01
+    #   become: true
+    #   mount:
+    #     path: /u01
+    #     src: /dev/sda3
+    #     fstype: ext4
+    #     state: mounted
+
